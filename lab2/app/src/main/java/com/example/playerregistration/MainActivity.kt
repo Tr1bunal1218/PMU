@@ -13,6 +13,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var seekBarDifficulty: SeekBar
     private lateinit var tvDifficultyValue: TextView
     private lateinit var calendarView: CalendarView
+    private lateinit var spinnerYear: Spinner
     private lateinit var ivZodiac: ImageView
     private lateinit var btnSubmit: Button
     private lateinit var tvOutput: TextView
@@ -20,6 +21,8 @@ class MainActivity : AppCompatActivity() {
     private var selectedDay = 1
     private var selectedMonth = 0 // 0-based
     private var selectedYear = 2000
+
+    private val years = (1900..2100).toList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,11 +35,12 @@ class MainActivity : AppCompatActivity() {
         seekBarDifficulty = findViewById(R.id.seekBarDifficulty)
         tvDifficultyValue = findViewById(R.id.tvDifficultyValue)
         calendarView = findViewById(R.id.calendarView)
+        spinnerYear = findViewById(R.id.spinnerYear)
         ivZodiac = findViewById(R.id.ivZodiac)
         btnSubmit = findViewById(R.id.btnSubmit)
         tvOutput = findViewById(R.id.tvOutput)
 
-        // Настраиваем Spinner (классический ComboBox)
+        // Настраиваем Spinner курсов
         val courses = arrayOf("1 курс", "2 курс", "3 курс", "4 курс")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, courses)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -48,7 +52,6 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 tvDifficultyValue.text = "Сложность: $progress"
             }
-
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
@@ -60,14 +63,43 @@ class MainActivity : AppCompatActivity() {
         selectedMonth = cal.get(Calendar.MONTH)
         selectedYear = cal.get(Calendar.YEAR)
 
+        // Настройка Spinner для годов
+        val yearAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, years)
+        yearAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerYear.adapter = yearAdapter
+        spinnerYear.setSelection(years.indexOf(selectedYear))
+
+        spinnerYear.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>, view: android.view.View?, position: Int, id: Long
+            ) {
+                val newYear = years[position]
+                if (newYear != selectedYear) {
+                    selectedYear = newYear
+                    val cal = Calendar.getInstance()
+                    cal.set(selectedYear, selectedMonth, selectedDay)
+                    calendarView.date = cal.timeInMillis
+                    updateZodiacImage(selectedDay, selectedMonth)
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
         // Показываем знак исходя из текущей выбранной даты
         updateZodiacImage(selectedDay, selectedMonth)
 
         // Слушатель для изменения даты
         calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
             selectedDay = dayOfMonth
-            selectedMonth = month // month — 0-based
+            selectedMonth = month
             selectedYear = year
+
+            // Обновляем Spinner при изменении года
+            val index = years.indexOf(year)
+            if (index != -1) {
+                spinnerYear.setSelection(index)
+            }
+
             updateZodiacImage(selectedDay, selectedMonth)
         }
 
